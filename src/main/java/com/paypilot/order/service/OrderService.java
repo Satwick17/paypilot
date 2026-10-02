@@ -4,6 +4,8 @@ import com.paypilot.merchant.repository.MerchantRepository;
 import com.paypilot.order.entity.Order;
 import com.paypilot.order.repository.OrderRepository;
 import org.springframework.stereotype.Service;
+import com.paypilot.common.exception.DuplicateOrderException;
+import com.paypilot.common.exception.MerchantNotFoundException;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -34,11 +36,11 @@ public class OrderService {
     ) {
 
         if (!merchantRepository.existsById(merchantId)) {
-            throw new IllegalArgumentException("Merchant not found");
+            throw new MerchantNotFoundException("Merchant not found");
         }
 
         if (orderRepository.existsByOrderNumber(orderNumber)) {
-            throw new IllegalArgumentException("Order number already exists");
+            throw new DuplicateOrderException("Order number already exists");
         }
 
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
