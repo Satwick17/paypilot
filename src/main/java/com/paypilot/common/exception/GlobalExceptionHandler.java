@@ -4,6 +4,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.paypilot.common.exception.OrderNotFoundException;
+import com.paypilot.common.exception.DuplicatePaymentReferenceException;
+import com.paypilot.common.exception.InvalidPaymentTransitionException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,6 +26,39 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDuplicateOrder(
             DuplicateOrderException exception
+    ) {
+        return new ErrorResponse(
+                409,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleOrderNotFound(
+            OrderNotFoundException exception
+    ){
+        return new ErrorResponse(
+                404,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(DuplicatePaymentReferenceException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicatePaymentReference(
+            DuplicatePaymentReferenceException exception
+    ){
+        return new ErrorResponse(
+                409,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(InvalidPaymentTransitionException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleInvalidPaymentTransition(
+            InvalidPaymentTransitionException exception
     ) {
         return new ErrorResponse(
                 409,
