@@ -2,6 +2,7 @@ package com.paypilot.payment.service;
 
 import com.paypilot.common.exception.DuplicatePaymentReferenceException;
 import com.paypilot.common.exception.OrderNotFoundException;
+import com.paypilot.common.exception.PaymentNotFoundException;
 import com.paypilot.order.entity.Order;
 import com.paypilot.order.repository.OrderRepository;
 import com.paypilot.payment.entity.Payment;
@@ -10,12 +11,14 @@ import com.paypilot.payment.repository.PaymentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.paypilot.common.exception.InvalidPaymentTransitionException;
+import com.paypilot.common.exception.PaymentNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import com.paypilot.payment.entity.PaymentStatus;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -94,5 +97,32 @@ public class PaymentService {
         }
 
         return paymentRepository.save(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment getPaymentById(UUID paymentId){
+        return paymentRepository.findById(paymentId)
+                .orElseThrow(()-> new PaymentNotFoundException(
+                        "Payment not found" + paymentId
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Payment getPaymentByReference(String paymentReference){
+        return paymentRepository.findByPaymentReference(paymentReference)
+                .orElseThrow(()->new PaymentNotFoundException(
+                        "Payment not found with reference" + paymentReference
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Payment> getPaymentsByOrderId(UUID orderId){
+        if(!orderRepository.existsById(orderId)){
+            throw new OrderNotFoundException(
+                    "Order not found" + orderId
+            );
+        }
+
+        return paymentRepository.findByOrderId(orderId);
     }
 }

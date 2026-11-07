@@ -1,74 +1,114 @@
+
 package com.paypilot.common.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.paypilot.common.exception.OrderNotFoundException;
-import com.paypilot.common.exception.DuplicatePaymentReferenceException;
-import com.paypilot.common.exception.InvalidPaymentTransitionException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(MerchantNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleMerchantNotFound(
-            MerchantNotFoundException exception
+    private ErrorResponse buildErrorResponse(
+            HttpStatus status,
+            String message,
+            HttpServletRequest request
     ) {
         return new ErrorResponse(
-                404,
-                exception.getMessage()
+                OffsetDateTime.now(ZoneOffset.UTC),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI()
         );
     }
 
-    @ExceptionHandler(DuplicateOrderException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse handleDuplicateOrder(
-            DuplicateOrderException exception
+    @ExceptionHandler(MerchantNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleMerchantNotFound(
+            MerchantNotFoundException exception,
+            HttpServletRequest request
     ) {
-        return new ErrorResponse(
-                409,
-                exception.getMessage()
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND, exception.getMessage(), request
         );
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleOrderNotFound(
-            OrderNotFoundException exception
-    ){
-        return new ErrorResponse(
-                404,
-                exception.getMessage()
+            OrderNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND, exception.getMessage(), request
+        );
+    }
+
+    @ExceptionHandler(PaymentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handlePaymentNotFound(
+            PaymentNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND, exception.getMessage(), request
+        );
+    }
+
+    @ExceptionHandler(DuplicateOrderException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicateOrder(
+            DuplicateOrderException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, exception.getMessage(), request
         );
     }
 
     @ExceptionHandler(DuplicatePaymentReferenceException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDuplicatePaymentReference(
-            DuplicatePaymentReferenceException exception
-    ){
-        return new ErrorResponse(
-                409,
-                exception.getMessage()
+            DuplicatePaymentReferenceException exception,
+            HttpServletRequest request
+    ) {
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, exception.getMessage(), request
         );
     }
 
     @ExceptionHandler(InvalidPaymentTransitionException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleInvalidPaymentTransition(
-            InvalidPaymentTransitionException exception
+            InvalidPaymentTransitionException exception,
+            HttpServletRequest request
     ) {
-        return new ErrorResponse(
-                409,
-                exception.getMessage()
+        return buildErrorResponse(
+                HttpStatus.CONFLICT, exception.getMessage(), request
         );
     }
 
-    public record ErrorResponse(
-            int status,
-            String message
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidationErrors(
+            MethodArgumentNotValidException exception,
+            HttpServletRequest request
     ) {
+        String message = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("Request validation failed");
+
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST, message, request
+        );
     }
 }
